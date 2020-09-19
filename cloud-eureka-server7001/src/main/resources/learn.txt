@@ -1,0 +1,42 @@
+Spring Cloud：
+
+Service Provider--->Register/Renew/Cancel--->Eureka Server<---Get Registy<---Service Consumer
+--->Remote Call--->Service Provider
+
+1.先启动eureka注册中心；
+2.启动服务提供者payment支付服务；
+3.支付服务启动后会把自身信息（比如服务地址以别名方式）注册进eureka；
+4.消费者order服务在需要调用接口时，使用服务别名去注册中心获取实际的RPC远程调用地址；
+5.消费者获得调用地址后，底层实际是利用HttpClient技术实现远程调用；
+6.消费者获得服务地址后会缓存在本地ivm内存中，默认每间隔30秒获取一次服务调用地址；
+
+问题：微服务RPC远程服务调用最核心的是什么？
+高可用，试想你的注册中心只有一个only one，他出故障了那就呵呵了，会导致整个微服务环境不可用，所以
+解决办法：搭建Eureka注册中心集群，实现负载均衡+故障容错。
+Eureka集群核心：互相注册，相互守望，对外暴露出一个整机。保证每个eureka都有这个圈子里（集群）其他兄弟的相关信息。
+
+/**
+ * 对于注册进eureka里面的微服务payment，可以通过服务发现来获得该服务的信息
+ * 那么（payment微服务）怎么暴露给对方我们自身的（调用者order）这些（payment微）服务信息呢？
+ * 答，可以通过服务发现来获得该服务的信息
+ */
+
+Eureka自我保护机制：
+概述：保护模式主要用于一组客户端和Eureka Server之间存在网络分区场景下的保护，一旦进入保护模式，
+Eureka Server将会尝试保护其服务注册列表中的信息，不再删除服务注册表中的数据，也就是不会注销任何微服务。
+故障现象：
+如果在Eureka Server的首页看到以下这段提示，则说明eureka进入了保护模式，
+EMERGENCY! EUREKA MAY BE INCORRECTLY CLAIMING INSTANCES ARE UP WHEN THEY'RE NOT.
+RENEWALS ARE LESSER THAN THRESHOLD AND HENCE THE INSTANCES ARE NOT BEING EXPIRED JUST TO BE SAFE.
+导致原因：
+一句话，某时刻某一个微服务不可用了，Eureka不会立刻清理，依旧会对该微服务的信息进行保存，属于CAP定理里面的AP分支。
+怎样进制自我保护？
+
+为什么会产生自我保护机制：
+为了防止EurekaClient可以正常运行，但是与EurekaServer网络不通情况下，EurekaServer不会立刻将EurekaClient服务剔除。
+什么是自我保护模式：
+默认情况下，如果EurekaServer在一定时间内没有接收到某个微服务实例的心跳，EurekaServer将会注销该实例（默认90秒）。
+但是当网络分区故障发生（延时、卡顿、拥挤）时，微服务与EurekaServer之间无法正常通信，以上行为可能变得非常危险了——因为
+微服务本身其实是健康的，此时本不应该注销这个微服务。Eureka通过“自我保护模式”来解决这个问题——当EurekaServer节点在
+短时间内丢失过多客户端时（可能发生了网络分区故障），那么这个节点就会进入自我保护模式。
+
