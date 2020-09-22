@@ -5,8 +5,10 @@ import com.yun.cloud9.entities.Payment;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
@@ -31,6 +33,9 @@ public class OrderController {
     @Resource
     private DiscoveryClient discoveryClient;
 
+    /**
+     * 返回对象为响应体中数据转化成的对象，基本上可以理解为Json
+     */
     @GetMapping("/consumer/payment/get/{id}")
     public CommonResult<Payment> getPaymentById(@PathVariable("id") Long id) {
         return restTemplate.getForObject(PAYMENT_URL + "/payment/get/" + id, CommonResult.class);
@@ -61,5 +66,29 @@ public class OrderController {
         }
         // 获取相应的服务信息
         return this.discoveryClient;
+    }
+
+    /**
+     * 返回对象为ResponseEntity对象，包含了响应中的一些重要信息，比如响应头，响应体，响应状态等
+     */
+    @GetMapping("/consumer/payment/getForEntity/{id}")
+    public CommonResult<Payment> getPaymentById2(@PathVariable("id") Long id) {
+        ResponseEntity<CommonResult> entity = restTemplate.getForEntity(PAYMENT_URL + "/payment/get/" + id, CommonResult.class);
+        if (entity.getStatusCode().is2xxSuccessful()) {
+            return entity.getBody();
+        } else {
+            return new CommonResult(444, "查询操作失败！");
+        }
+    }
+
+    /**
+     * 新建
+     * @param payment
+     * @return
+     */
+    @PostMapping("/consumer/payment/create")
+    public CommonResult<Payment> createPayment(Payment payment) {
+//        return restTemplate.postForObject(PAYMENT_URL + "/payment/create", payment, CommonResult.class);
+        return restTemplate.postForEntity(PAYMENT_URL + "/payment/create", payment, CommonResult.class).getBody();
     }
 }
