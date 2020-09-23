@@ -2,6 +2,7 @@ package com.yun.cloud9.controller;
 
 import com.yun.cloud9.entities.CommonResult;
 import com.yun.cloud9.entities.Payment;
+import com.yun.cloud9.lb.LoadBalancer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.Resource;
+import java.net.URI;
 import java.util.List;
 
 /**
@@ -32,6 +34,9 @@ public class OrderController {
 
     @Resource
     private DiscoveryClient discoveryClient;
+
+    @Resource
+    private LoadBalancer loadBalancer;
 
     /**
      * 返回对象为响应体中数据转化成的对象，基本上可以理解为Json
@@ -90,5 +95,16 @@ public class OrderController {
     public CommonResult<Payment> createPayment(Payment payment) {
 //        return restTemplate.postForObject(PAYMENT_URL + "/payment/create", payment, CommonResult.class);
         return restTemplate.postForEntity(PAYMENT_URL + "/payment/create", payment, CommonResult.class).getBody();
+    }
+
+    @GetMapping("/consumer/payment/lb")
+    public String getPaymentLB() {
+        List<ServiceInstance> instances = discoveryClient.getInstances("CLOUD-PAYMENT-SERVICE");
+        if (null == instances || instances.size() <= 0) {
+            return null;
+        }
+        ServiceInstance instance = loadBalancer.instance(instances);
+        URI uri = instance.getUri();
+        return restTemplate.getForObject(uri + "/payment/lb", String.class);
     }
 }

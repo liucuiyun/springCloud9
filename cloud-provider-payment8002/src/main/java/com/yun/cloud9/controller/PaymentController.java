@@ -84,4 +84,9 @@ public class PaymentController {
         // 获取相应的服务信息
         return this.discoveryClient;
     }
+
+    @GetMapping("/payment/lb")
+    public String getPaymentLB() {
+        return "本次调用服务端口：{}" + serverPort;
+    }
 }
