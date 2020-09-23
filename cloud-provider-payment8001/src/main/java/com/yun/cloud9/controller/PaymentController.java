@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author yun
@@ -32,7 +33,7 @@ public class PaymentController {
     private String serverPort;
 
     @PostMapping("/payment/create")
-    public CommonResult create(@RequestBody Payment payment) {
+    public CommonResult<Payment> create(@RequestBody Payment payment) {
         int result = paymentService.create(payment);
         log.info(" >> 插入结果 ->result：{}，serverPort: {}", result, serverPort);
         if (result > 0) {
@@ -43,7 +44,7 @@ public class PaymentController {
     }
 
     @GetMapping("/payment/get/{id}")
-    public CommonResult getPaymentById(@PathVariable("id") Long id) {
+    public CommonResult<Payment> getPaymentById(@PathVariable("id") Long id) {
         Payment payment = paymentService.getPaymentById(id);
         log.info(" >> 8001查询结果 ->result：{}，serverPort: {}", JSONObject.toJSONString(payment), serverPort);
         if (payment != null) {
@@ -88,5 +89,20 @@ public class PaymentController {
     @GetMapping("/payment/lb")
     public String getPaymentLB() {
         return "本次调用服务端口：{}" + serverPort;
+    }
+
+    /**
+     * 服务提供方故意写暂停程序，供消费者 模拟Feign超时控制调用
+     * @return
+     */
+    @GetMapping(value = "/payment/feign/timeout")
+    public String paymentFeignTimeOut() {
+        try {
+            // 暂停几秒钟线程
+            TimeUnit.SECONDS.sleep(3);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return serverPort;
     }
 }
