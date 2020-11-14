@@ -24,7 +24,7 @@
             <artifactId>cloud-api-commons</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <!-- boot web actuator -->
+        <!-- boot web actuator监控信息完善 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
